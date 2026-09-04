@@ -11,3 +11,6 @@ dist/
 build/
 qdrant_storage/
 *.log
+node_modules/
+.next/
+frontend/.next/

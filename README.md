@@ -6,7 +6,7 @@ A gateway in front of [Cohere's API](https://docs.cohere.com/reference/about). E
 Client → HMAC auth → token bucket → semantic cache → coalescing → Cohere
 ```
 
-This repo ships the backend first. `/v1/metrics` is the contract for a later dashboard.
+The Next.js console at `frontend/` lets you drive Chat/Embed and watch cache, coalescing, and metrics live.
 
 ## Prerequisites
 
@@ -53,6 +53,26 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Metrics: `GET http://127.0.0.1:8000/v1/metrics`
 
 Successful proxy responses include `X-Cordon-Decision: cache | coalesced | origin`.
+
+## Frontend console
+
+Keep the backend running, then:
+
+```powershell
+cd C:\Users\patel\Downloads\side-projects\Cordon\frontend
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The UI signs requests as `demo-key` / `demo-secret` and talks to `http://127.0.0.1:8000`.
+
+Try this order:
+
+1. **Send signed** — first call should show `origin`
+2. **Send again** — same prompt should show `cache`
+3. **Burst ×4** — at least one `coalesced`
+4. **Unsigned** — `401`
+5. Watch the pipeline rail, counters, and request log update
 
 ## Signed requests
 
