@@ -1,7 +1,7 @@
 # PRD: Cordon
 ### A gateway that makes serving Cohere's API cheaper, safer, and more resilient
 
-**Author:** [Your Name]
+**Author:** Neelpatel1604
 **Status:** Draft v2
 
 ---
