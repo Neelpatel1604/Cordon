@@ -60,6 +60,9 @@ export async function signedPost(
   }
 
   const decision = asDecision(response.headers.get("X-Cordon-Decision"), response.status);
+  const scoreHeader = response.headers.get("X-Cordon-Cache-Score");
+  const needHeader = response.headers.get("X-Cordon-Cache-Need");
+  const grayHeader = response.headers.get("X-Cordon-Cache-Gray");
   const error =
     !response.ok && parsed && typeof parsed === "object" && "message" in parsed
       ? String((parsed as { message: string }).message)
@@ -73,7 +76,60 @@ export async function signedPost(
     latencyMs,
     body: parsed,
     error,
+    cacheScore: scoreHeader ? Number(scoreHeader) : undefined,
+    cacheMatch: response.headers.get("X-Cordon-Cache-Match") ?? undefined,
+    cacheVia: response.headers.get("X-Cordon-Cache-Via") ?? undefined,
+    cacheNeed: needHeader ? Number(needHeader) : undefined,
+    cacheGray: grayHeader ? Number(grayHeader) : undefined,
   };
+}
+
+function extractEmbeddingVectors(embeddings: unknown): number[][] {
+  if (!embeddings) {
+    return [];
+  }
+  if (Array.isArray(embeddings)) {
+    return embeddings.filter((item): item is number[] => Array.isArray(item));
+  }
+  if (typeof embeddings !== "object") {
+    return [];
+  }
+  const record = embeddings as Record<string, unknown>;
+  const floats = record.float ?? record.float_;
+  if (Array.isArray(floats)) {
+    return floats.filter((item): item is number[] => Array.isArray(item));
+  }
+  return [];
+}
+
+function formatEmbeddings(embeddings: unknown): string {
+  const vectors = extractEmbeddingVectors(embeddings);
+  if (!vectors.length) {
+    return JSON.stringify(embeddings, null, 2);
+  }
+
+  const valuesPerLine = 8;
+  const lines = [
+    "Embedding response",
+    `  vectors: ${vectors.length}`,
+    `  dimensions: ${vectors[0]?.length ?? 0}`,
+    "  scroll for full vector",
+    "",
+  ];
+
+  vectors.forEach((vector, index) => {
+    lines.push(`vector[${index}]`);
+    for (let offset = 0; offset < vector.length; offset += valuesPerLine) {
+      const chunk = vector
+        .slice(offset, offset + valuesPerLine)
+        .map((value) => value.toFixed(5))
+        .join(", ");
+      lines.push(`  [${offset}] ${chunk}`);
+    }
+    lines.push("");
+  });
+
+  return lines.join("\n").trimEnd();
 }
 
 export function extractReply(body: unknown): string {
@@ -94,7 +150,7 @@ export function extractReply(body: unknown): string {
     }
   }
   if (record.embeddings) {
-    return JSON.stringify(record.embeddings, null, 2);
+    return formatEmbeddings(record.embeddings);
   }
   if (record.message && typeof record.message === "string") {
     return record.message;

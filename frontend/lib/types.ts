@@ -41,4 +41,9 @@ export type PlayResult = {
   latencyMs: number;
   body: unknown;
   error?: string;
+  cacheScore?: number;
+  cacheMatch?: string;
+  cacheVia?: string;
+  cacheNeed?: number;
+  cacheGray?: number;
 };

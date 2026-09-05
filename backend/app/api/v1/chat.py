@@ -26,7 +26,7 @@ async def chat(
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    result, decision = await pipeline.handle(
+    result, decision, extra_headers = await pipeline.handle(
         method=request.method,
         path=request.url.path,
         raw_body=raw_body,
@@ -35,4 +35,7 @@ async def chat(
         body=body,
         cache_text=extract_chat_text(body),
     )
-    return JSONResponse(content=result, headers={"X-Cordon-Decision": decision})
+    return JSONResponse(
+        content=result,
+        headers={"X-Cordon-Decision": decision, **extra_headers},
+    )

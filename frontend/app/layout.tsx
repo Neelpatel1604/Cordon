@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cordon — gateway console",
-  description: "Live console for the Cordon Cohere gateway: chat, embed, cache, coalescing, and metrics.",
+  title: "Cordon",
+  description: "Intelligent gateway for Cohere Chat and Embed APIs.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

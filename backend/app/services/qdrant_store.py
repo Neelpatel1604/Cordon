@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from dataclasses import dataclass
 from typing import Any
 
 from qdrant_client import AsyncQdrantClient
@@ -18,6 +19,13 @@ from qdrant_client.http.models import (
 )
 
 from app.config import Settings
+
+
+@dataclass(frozen=True)
+class CacheCandidate:
+    text: str
+    response: dict[str, Any]
+    score: float
 
 
 class QdrantStore:
@@ -66,12 +74,13 @@ class QdrantStore:
                 # Index may already exist after a restart.
                 continue
 
-    async def search(
+    async def search_candidates(
         self,
         endpoint: str,
         vector: list[float],
         threshold: float,
-    ) -> dict[str, Any] | None:
+        limit: int = 1,
+    ) -> list[CacheCandidate]:
         now = time.time()
         query_filter = Filter(
             must=[
@@ -83,19 +92,25 @@ class QdrantStore:
             collection_name=self.collection,
             query=vector,
             query_filter=query_filter,
-            limit=1,
+            limit=max(1, limit),
             with_payload=True,
             score_threshold=threshold,
         )
-        hits = result.points
-        if not hits:
-            return None
-        top = hits[0]
-        payload = top.payload or {}
-        response = payload.get("response")
-        if not isinstance(response, dict):
-            return None
-        return response
+        candidates: list[CacheCandidate] = []
+        for point in result.points:
+            payload = point.payload or {}
+            response = payload.get("response")
+            if not isinstance(response, dict):
+                continue
+            text = payload.get("text")
+            candidates.append(
+                CacheCandidate(
+                    text=text if isinstance(text, str) else "",
+                    response=response,
+                    score=float(point.score),
+                )
+            )
+        return candidates
 
     async def upsert(
         self,

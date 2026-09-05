@@ -45,6 +45,10 @@ async def lifespan(app: FastAPI):
             store=qdrant,
             embedder=cohere,
             threshold=settings.cache_similarity_threshold,
+            retrieve_threshold=settings.cache_retrieve_threshold,
+            reranker=cohere,
+            rerank_threshold=settings.cache_rerank_threshold,
+            rerank_candidates=settings.cache_rerank_candidates,
         ),
         coalescer=Coalescer(),
         cohere=cohere,
@@ -74,7 +78,15 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Cordon-Decision", "Retry-After"],
+    expose_headers=[
+        "X-Cordon-Decision",
+        "X-Cordon-Cache-Score",
+        "X-Cordon-Cache-Match",
+        "X-Cordon-Cache-Via",
+        "X-Cordon-Cache-Need",
+        "X-Cordon-Cache-Gray",
+        "Retry-After",
+    ],
 )
 
 app.include_router(health_router)

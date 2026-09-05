@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import time
 from typing import Any, Literal
 
@@ -9,11 +10,12 @@ from app.errors import AuthError, RateLimitError
 from app.layers.auth import AuthLayer
 from app.layers.coalescer import Coalescer
 from app.layers.rate_limit import RateLimiter
-from app.layers.semantic_cache import SemanticCache
+from app.layers.semantic_cache import SemanticCache, normalize_cache_text
 from app.services.cohere_client import CohereService
 from app.services.metrics import MetricsService
 
 Decision = Literal["cache", "coalesced", "origin"]
+logger = logging.getLogger(__name__)
 
 
 def request_hash(endpoint: str, body: dict[str, Any]) -> str:
@@ -36,13 +38,13 @@ def extract_chat_text(body: dict[str, Any]) -> str:
         content = message.get("content")
         text = _content_to_text(content)
         if text:
-            return text
-    return json.dumps(body, sort_keys=True, default=str)
+            return normalize_cache_text(text)
+    return normalize_cache_text(json.dumps(body, sort_keys=True, default=str))
 
 
 def extract_embed_text(body: dict[str, Any]) -> str:
     texts = body.get("texts") or []
-    return "\n".join(str(item) for item in texts)
+    return normalize_cache_text("\n".join(str(item) for item in texts))
 
 
 def _content_to_text(content: Any) -> str:
@@ -88,9 +90,10 @@ class GatewayPipeline:
         endpoint: Literal["chat", "embed"],
         body: dict[str, Any],
         cache_text: str,
-    ) -> tuple[dict[str, Any], Decision]:
+    ) -> tuple[dict[str, Any], Decision, dict[str, str]]:
         started = time.perf_counter()
-        decision = "origin"
+        decision: Decision = "origin"
+        extra_headers: dict[str, str] = {}
         try:
             key_id = self.auth.verify(
                 method=method,
@@ -103,23 +106,34 @@ class GatewayPipeline:
             )
             await self.rate_limiter.consume(key_id)
 
-            vector: list[float] | None = None
-            try:
-                vector = await self.cache.embed_query(cache_text)
-                cached = await self.cache.lookup(endpoint, vector)
-            except Exception:
-                cached = None
-                vector = None
+            coalesce_key = request_hash(endpoint, body)
+            winner_decision: Decision = "origin"
 
-            if cached is not None:
-                self.metrics.increment("cache_hits")
-                decision = "cache"
-                return cached, decision
+            async def resolve() -> dict[str, Any]:
+                nonlocal winner_decision
+                vector: list[float] | None = None
+                try:
+                    vector = await self.cache.embed_query(cache_text)
+                    lookup = await self.cache.lookup(endpoint, vector, cache_text)
+                except Exception:
+                    logger.exception("Semantic cache lookup failed")
+                    lookup = None
+                    vector = None
 
-            self.metrics.increment("cache_misses")
-            key = request_hash(endpoint, body)
+                if lookup is not None and lookup.response is not None:
+                    self.metrics.increment("cache_hits")
+                    winner_decision = "cache"
+                    extra_headers.update(
+                        lookup.headers(self.cache.threshold, self.cache.retrieve_threshold)
+                    )
+                    return lookup.response
 
-            async def call_origin() -> dict[str, Any]:
+                if lookup is not None:
+                    extra_headers.update(
+                        lookup.headers(self.cache.threshold, self.cache.retrieve_threshold)
+                    )
+
+                self.metrics.increment("cache_misses")
                 self.metrics.increment("cohere_calls")
                 if endpoint == "chat":
                     result = await self.cohere.chat(body)
@@ -129,23 +143,24 @@ class GatewayPipeline:
                     try:
                         await self.cache.remember(endpoint, vector, cache_text, result)
                     except Exception:
-                        pass
+                        logger.exception("Semantic cache write failed")
+                winner_decision = "origin"
                 return result
 
-            result, was_coalesced = await self.coalescer.join_or_run(key, call_origin)
+            result, was_coalesced = await self.coalescer.join_or_run(coalesce_key, resolve)
             if was_coalesced:
                 self.metrics.increment("coalesced")
                 decision = "coalesced"
             else:
-                decision = "origin"
-            return result, decision
+                decision = winner_decision
+            return result, decision, extra_headers
         except AuthError:
             self.metrics.increment("auth_rejected")
-            decision = "auth_rejected"
+            decision = "auth_rejected"  # type: ignore[assignment]
             raise
         except RateLimitError:
             self.metrics.increment("rate_limited")
-            decision = "rate_limited"
+            decision = "rate_limited"  # type: ignore[assignment]
             raise
         finally:
             latency_ms = (time.perf_counter() - started) * 1000

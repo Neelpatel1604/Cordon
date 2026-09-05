@@ -110,6 +110,30 @@ class CohereService:
             raise UpstreamError("Cohere embed returned no vectors")
         return embeddings[0]
 
+    async def rerank(self, query: str, documents: list[str]) -> list[tuple[int, float]]:
+        if not documents:
+            return []
+        try:
+            response = await self._client.rerank(
+                model=self.settings.rerank_model,
+                query=query,
+                documents=documents,
+                top_n=len(documents),
+            )
+        except Exception as exc:
+            raise UpstreamError(f"Cohere rerank failed: {exc}") from exc
+
+        results = getattr(response, "results", None) or []
+        ranked: list[tuple[int, float]] = []
+        for item in results:
+            index = getattr(item, "index", None)
+            score = getattr(item, "relevance_score", None)
+            if index is None or score is None:
+                continue
+            ranked.append((int(index), float(score)))
+        ranked.sort(key=lambda pair: pair[1], reverse=True)
+        return ranked
+
 
 def _extract_float_embeddings(response: dict[str, Any]) -> list[list[float]]:
     embeddings = response.get("embeddings")

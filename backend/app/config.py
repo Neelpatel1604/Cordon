@@ -24,13 +24,17 @@ class Settings(BaseSettings):
     rate_limit_capacity: float = 30
     rate_limit_refill_per_sec: float = 5
 
-    cache_similarity_threshold: float = 0.92
+    cache_similarity_threshold: float = 0.82
+    cache_retrieve_threshold: float = 0.7
+    cache_rerank_threshold: float = 0.45
+    cache_rerank_candidates: int = 5
     cache_ttl_seconds: int = 3600
     cache_max_entries: int = 1000
     cache_vector_size: int = 1024
 
     chat_model: str = "command-a-plus-05-2026"
     embed_model: str = "embed-v4.0"
+    rerank_model: str = "rerank-v3.5"
 
     cordon_host: str = "0.0.0.0"
     cordon_port: int = 8000

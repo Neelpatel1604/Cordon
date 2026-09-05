@@ -1,9 +1,9 @@
 # Cordon
 
-A gateway in front of [Cohere's API](https://docs.cohere.com/reference/about). Every Chat or Embed request is signed, rate-limited, checked against a semantic cache (Qdrant + Cohere Embed), and coalesced if an identical call is already in flight.
+A gateway in front of [Cohere's API](https://docs.cohere.com/reference/about). Every Chat or Embed request is signed, rate-limited, checked against a semantic cache (Qdrant + Cohere Embed, with Cohere Rerank only on borderline matches), and coalesced if an identical call is already in flight.
 
 ```
-Client → HMAC auth → token bucket → semantic cache → coalescing → Cohere
+Client -> HMAC auth -> token bucket -> coalescing -> semantic cache -> Cohere
 ```
 
 The Next.js console at `frontend/` lets you drive Chat/Embed and watch cache, coalescing, and metrics live.
@@ -64,15 +64,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The UI signs requests as `demo-key` / `demo-secret` and talks to `http://127.0.0.1:8000`.
+Open [http://localhost:3000](http://localhost:3000) for the landing page, or [http://localhost:3000/console](http://localhost:3000/console) for the live demo. The UI signs requests as `demo-key` / `demo-secret` and talks to `http://127.0.0.1:8000`.
 
-Try this order:
-
-1. **Send signed** — first call should show `origin`
-2. **Send again** — same prompt should show `cache`
-3. **Burst ×4** — at least one `coalesced`
-4. **Unsigned** — `401`
-5. Watch the pipeline rail, counters, and request log update
+Use the playground: **Send signed** -> **Send again** (cache) -> **Burst x4** (coalesce) -> **Unsigned** (401).
 
 ## Signed requests
 

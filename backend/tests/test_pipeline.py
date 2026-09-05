@@ -13,14 +13,23 @@ from app.layers.rate_limit import RateLimiter
 from app.layers.semantic_cache import SemanticCache
 from app.pipeline.gateway import GatewayPipeline
 from app.services.metrics import MetricsService
+from app.services.qdrant_store import CacheCandidate
 
 
 class FakeStore:
     def __init__(self) -> None:
         self.item: dict[str, Any] | None = None
 
-    async def search(self, endpoint: str, vector: list[float], threshold: float) -> dict[str, Any] | None:
-        return self.item
+    async def search_candidates(
+        self,
+        endpoint: str,
+        vector: list[float],
+        threshold: float,
+        limit: int = 1,
+    ) -> list[CacheCandidate]:
+        if self.item is None:
+            return []
+        return [CacheCandidate(text="", response=self.item, score=1.0)]
 
     async def upsert(self, endpoint: str, vector: list[float], text: str, response: dict[str, Any]) -> None:
         self.item = response
@@ -83,7 +92,7 @@ async def test_origin_then_cache_hit(monkeypatch: pytest.MonkeyPatch) -> None:
     body = {"messages": [{"role": "user", "content": "hello"}]}
     raw = b'{"messages":[{"role":"user","content":"hello"}]}'
 
-    first, decision = await pipeline.handle(
+    first, decision, _headers = await pipeline.handle(
         method="POST",
         path="/v1/chat",
         raw_body=raw,
@@ -92,7 +101,7 @@ async def test_origin_then_cache_hit(monkeypatch: pytest.MonkeyPatch) -> None:
         body=body,
         cache_text="hello",
     )
-    second, cached = await pipeline.handle(
+    second, cached, cache_headers = await pipeline.handle(
         method="POST",
         path="/v1/chat",
         raw_body=raw,
@@ -182,8 +191,53 @@ async def test_coalesces_identical_inflight_requests(monkeypatch: pytest.MonkeyP
             for index in range(5)
         ]
     )
-    decisions = [decision for _, decision in results]
+    decisions = [decision for _, decision, _headers in results]
     assert client.chat_calls == 1
     assert decisions.count("origin") == 1
     assert decisions.count("coalesced") == 4
     assert pipeline.metrics.snapshot().coalesced == 4
+
+
+@pytest.mark.asyncio
+async def test_coalesce_runs_before_cache_on_warm_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("app.layers.auth.time.time", lambda: 1_000_000)
+    pipeline, client = _pipeline()
+    body = {"messages": [{"role": "user", "content": "hello"}]}
+    raw = b'{"messages":[{"role":"user","content":"hello"}]}'
+
+    await pipeline.handle(
+        method="POST",
+        path="/v1/chat",
+        raw_body=raw,
+        headers=_signed(raw, "warm"),
+        endpoint="chat",
+        body=body,
+        cache_text="hello",
+    )
+    assert client.chat_calls == 1
+
+    class SlowEmbed(FakeEmbedder):
+        async def embed_query(self, text: str) -> list[float]:
+            await asyncio.sleep(0.05)
+            return [0.1, 0.2, 0.3]
+
+    pipeline.cache.embedder = SlowEmbed()
+
+    results = await asyncio.gather(
+        *[
+            pipeline.handle(
+                method="POST",
+                path="/v1/chat",
+                raw_body=raw,
+                headers=_signed(raw, f"burst-{index}"),
+                endpoint="chat",
+                body=body,
+                cache_text="hello",
+            )
+            for index in range(4)
+        ]
+    )
+    decisions = [decision for _, decision, _headers in results]
+    assert client.chat_calls == 1
+    assert decisions.count("coalesced") >= 3
+    assert "cache" in decisions or "coalesced" in decisions

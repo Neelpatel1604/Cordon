@@ -1,1 +1,1 @@
-"""Cordon — a gateway in front of Cohere Chat and Embed."""
+"""Cordon - a gateway in front of Cohere Chat and Embed."""
