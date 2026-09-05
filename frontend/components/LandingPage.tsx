@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AuroraBackground from "@/components/AuroraBackground";
 import GatewayDiagram from "@/components/GatewayDiagram";
+import { CORDON_NAME, CORDON_TAGLINE } from "@/lib/brand";
 
 const FEATURES = [
   {
@@ -29,7 +30,7 @@ export default function LandingPage() {
         <header className="mb-16 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">LLM gateway</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-100 md:text-4xl">Cordon</h1>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-100 md:text-4xl">{CORDON_NAME}</h1>
           </div>
           <Link
             href="/console"
@@ -41,7 +42,7 @@ export default function LandingPage() {
 
         <section className="mb-16">
           <h2 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-zinc-100 md:text-4xl">
-            A high-performance gateway for Cohere APIs.
+            {CORDON_TAGLINE}
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
             Cordon sits between your application and Cohere. It authenticates traffic, enforces limits,
@@ -144,7 +145,7 @@ export default function LandingPage() {
         </section>
 
         <footer className="mt-16 border-t border-zinc-800 pt-8 text-center text-xs text-zinc-600">
-          Cordon - auth, rate limits, coalescing, semantic cache for Cohere Chat and Embed
+          {CORDON_NAME}. {CORDON_TAGLINE}
         </footer>
       </div>
     </>

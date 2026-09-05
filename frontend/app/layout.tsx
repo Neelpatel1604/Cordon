@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { CORDON_NAME, CORDON_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cordon",
-  description: "Intelligent gateway for Cohere Chat and Embed APIs.",
+  title: CORDON_NAME,
+  description: CORDON_TAGLINE,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

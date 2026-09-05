@@ -13,6 +13,7 @@ import {
 import AuroraBackground from "@/components/AuroraBackground";
 import MetricCard from "@/components/MetricCard";
 import PipelineTrace from "@/components/PipelineTrace";
+import { CORDON_NAME, CORDON_TAGLINE } from "@/lib/brand";
 import { CORDON_URL, extractReply, fetchHealth, fetchMetrics, signedPost } from "@/lib/api";
 import type { Decision, Endpoint, HealthResponse, MetricsResponse, PlayResult } from "@/lib/types";
 
@@ -169,10 +170,8 @@ export default function Dashboard() {
                 Overview
               </Link>
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight text-zinc-100 md:text-5xl">Cordon</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-              Live traffic through auth, rate limits, coalescing, and semantic cache.
-            </p>
+            <h1 className="text-4xl font-semibold tracking-tight text-zinc-100 md:text-5xl">{CORDON_NAME}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">{CORDON_TAGLINE}</p>
           </div>
           <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm">
             <span className={`h-2 w-2 rounded-full ${online ? "bg-teal-500" : "bg-rose-400"}`} />

@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Cordon",
-    description="A gateway that makes serving Cohere's API cheaper, safer, and more resilient.",
+    description="A signed, rate-limited, self-caching gateway for LLM APIs.",
     version="0.1.0",
     lifespan=lifespan,
 )

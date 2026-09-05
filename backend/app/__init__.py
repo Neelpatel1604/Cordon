@@ -1,1 +1,1 @@
-"""Cordon - a gateway in front of Cohere Chat and Embed."""
+"""Cordon. A signed, rate-limited, self-caching gateway for LLM APIs."""

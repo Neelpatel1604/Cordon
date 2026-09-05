@@ -1,5 +1,5 @@
 # PRD: Cordon
-### A gateway that makes serving Cohere's API cheaper, safer, and more resilient
+### A signed, rate-limited, self-caching gateway for LLM APIs.
 
 **Author:** Neelpatel1604
 **Status:** Draft v2

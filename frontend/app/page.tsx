@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import LandingPage from "@/components/LandingPage";
+import { CORDON_NAME, CORDON_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Cordon - LLM gateway for Cohere",
-  description:
-    "Intelligent gateway for Cohere APIs. Auth, rate limiting, request coalescing, and semantic caching before upstream calls.",
+  title: CORDON_NAME,
+  description: CORDON_TAGLINE,
 };
 
 export default function Home() {

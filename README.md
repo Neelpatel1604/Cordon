@@ -1,6 +1,8 @@
 # Cordon
 
-A gateway in front of [Cohere's API](https://docs.cohere.com/reference/about). Every Chat or Embed request is signed, rate-limited, checked against a semantic cache (Qdrant + Cohere Embed, with Cohere Rerank only on borderline matches), and coalesced if an identical call is already in flight.
+A signed, rate-limited, self-caching gateway for LLM APIs.
+
+Sits in front of [Cohere Chat and Embed](https://docs.cohere.com/reference/about). Requests are HMAC-signed, rate-limited, coalesced when identical calls are in flight, and checked against a semantic cache (Qdrant + Cohere Embed) before they reach the provider.
 
 ```
 Client -> HMAC auth -> token bucket -> coalescing -> semantic cache -> Cohere
