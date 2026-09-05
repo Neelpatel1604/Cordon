@@ -68,9 +68,9 @@ export default function LandingPage() {
 
         <section className="mb-16">
           <h3 className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-500">Architecture</h3>
-          <p className="mb-6 max-w-2xl text-sm leading-6 text-zinc-400">
-            Cordon sits between your client and Cohere. Requests move left to right through the gateway.
-            Cache hits return above the pipeline. Misses leave to the right for Qdrant and Cohere.
+          <p className="mb-6 max-w-3xl text-sm leading-6 text-zinc-400">
+            Standard three-zone layout. Clients send signed HTTPS into Cordon. The gateway owns auth, rate
+            limits, coalescing, and semantic cache. Qdrant and Cohere stay outside the trust boundary.
           </p>
           <GatewayDiagram />
         </section>

@@ -1,7 +1,7 @@
 function Marker({ id, fill }: { id: string; fill: string }) {
   return (
-    <marker id={id} markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-      <path d="M0,0 L8,4 L0,8 Z" fill={fill} />
+    <marker id={id} markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 Z" fill={fill} />
     </marker>
   );
 }
@@ -31,7 +31,7 @@ function Box({
 }) {
   return (
     <g>
-      <rect x={x} y={y} width={w} height={h} rx={8} fill={fill} stroke={stroke} strokeWidth={1.5} />
+      <rect x={x} y={y} width={w} height={h} rx={8} fill={fill} stroke={stroke} strokeWidth={1.4} />
       <text
         x={x + w / 2}
         y={y + h / 2 - 5}
@@ -57,33 +57,23 @@ function Box({
   );
 }
 
-function Cylinder({
-  cx,
-  cy,
-  title,
-  subtitle,
-}: {
-  cx: number;
-  cy: number;
-  title: string;
-  subtitle: string;
-}) {
-  const w = 118;
-  const h = 70;
+function Cylinder({ cx, cy }: { cx: number; cy: number }) {
+  const w = 140;
+  const h = 72;
   const x = cx - w / 2;
   const y = cy - h / 2;
   return (
     <g>
-      <ellipse cx={cx} cy={y + 13} rx={w / 2} ry={10} fill="#042f2e" stroke="#2dd4bf" strokeWidth={1.5} />
+      <ellipse cx={cx} cy={y + 12} rx={w / 2} ry={9} fill="#042f2e" stroke="#2dd4bf" strokeWidth={1.4} />
       <path
-        d={`M ${x} ${y + 13} L ${x} ${y + h - 13} A ${w / 2} 10 0 0 0 ${x + w} ${y + h - 13} L ${x + w} ${y + 13}`}
+        d={`M ${x} ${y + 12} L ${x} ${y + h - 12} A ${w / 2} 9 0 0 0 ${x + w} ${y + h - 12} L ${x + w} ${y + 12}`}
         fill="#042f2e"
         stroke="#2dd4bf"
-        strokeWidth={1.5}
+        strokeWidth={1.4}
       />
-      <ellipse cx={cx} cy={y + h - 13} rx={w / 2} ry={10} fill="#042f2e" stroke="#2dd4bf" strokeWidth={1.5} />
+      <ellipse cx={cx} cy={y + h - 12} rx={w / 2} ry={9} fill="#042f2e" stroke="#2dd4bf" strokeWidth={1.4} />
       <text x={cx} y={cy - 2} textAnchor="middle" fill="#ccfbf1" fontSize={13} fontWeight={600}>
-        {title}
+        Qdrant
       </text>
       <text
         x={cx}
@@ -93,55 +83,45 @@ function Cylinder({
         fontSize={10}
         fontFamily="var(--font-geist-mono), ui-monospace, monospace"
       >
-        {subtitle}
+        cordon_cache
       </text>
     </g>
   );
 }
 
-function Path({
+function Link({
   d,
   color,
-  dashed = false,
   marker,
+  dashed = false,
 }: {
   d: string;
   color: string;
-  dashed?: boolean;
   marker: string;
+  dashed?: boolean;
 }) {
   return (
     <path
       d={d}
       fill="none"
       stroke={color}
-      strokeWidth={1.6}
-      strokeDasharray={dashed ? "6 5" : undefined}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={dashed ? "7 5" : undefined}
       markerEnd={`url(#${marker})`}
     />
   );
 }
 
-function Caption({
-  x,
-  y,
-  text,
-  fill,
-  anchor = "middle",
-}: {
-  x: number;
-  y: number;
-  text: string;
-  fill: string;
-  anchor?: "start" | "middle" | "end";
-}) {
+function Tag({ x, y, text, fill }: { x: number; y: number; text: string; fill: string }) {
   return (
     <text
       x={x}
       y={y}
-      textAnchor={anchor}
+      textAnchor="middle"
       fill={fill}
-      fontSize={11}
+      fontSize={10}
       fontFamily="var(--font-geist-mono), ui-monospace, monospace"
     >
       {text}
@@ -151,64 +131,56 @@ function Caption({
 
 export default function GatewayDiagram() {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-[#070709] px-2 py-4 sm:px-4 sm:py-6">
+    <div className="rounded-xl border border-zinc-800 bg-[#070709] px-3 py-5 sm:px-6">
       <svg
-        viewBox="0 0 1040 480"
+        viewBox="0 0 1080 520"
         role="img"
-        aria-label="Cordon sits between the client and Cohere. Requests pass Auth, Rate limit, Coalesce, then Semantic cache. Cache hits return to the client. Misses call Cohere and store vectors in Qdrant."
+        aria-label="Cordon architecture. Clients enter Auth, then Rate, Coalesce, and Semantic cache. Cache lookups go down to Qdrant. Misses go right to Cohere. Hits return left to clients. Cordon writes Qdrant after an upstream response."
         className="mx-auto h-auto w-full"
       >
         <title>Cordon architecture</title>
         <defs>
-          <Marker id="m-zinc" fill="#71717a" />
+          <Marker id="m-zinc" fill="#d4d4d8" />
           <Marker id="m-teal" fill="#2dd4bf" />
           <Marker id="m-amber" fill="#f59e0b" />
         </defs>
 
-        {/* Gateway boundary */}
+        {/* Zones */}
+        <rect x={20} y={36} width={188} height={400} rx={12} fill="#0c0c0f" stroke="#27272a" />
         <rect
-          x={208}
-          y={92}
-          width={548}
-          height={220}
-          rx={14}
+          x={232}
+          y={36}
+          width={560}
+          height={400}
+          rx={12}
           fill="#0a1110"
           stroke="#115e59"
-          strokeWidth={1.4}
+          strokeWidth={1.5}
           strokeDasharray="8 6"
         />
-        <text
-          x={224}
-          y={116}
-          fill="#5eead4"
-          fontSize={11}
-          fontWeight={600}
-          letterSpacing="0.16em"
-          fontFamily="var(--font-geist-mono), ui-monospace, monospace"
-        >
-          CORDON GATEWAY
+        <rect x={816} y={36} width={244} height={400} rx={12} fill="#0c0c0f" stroke="#27272a" />
+
+        <text x={114} y={58} textAnchor="middle" fill="#71717a" fontSize={10} fontWeight={600} letterSpacing="0.16em">
+          CLIENTS
+        </text>
+        <text x={512} y={58} textAnchor="middle" fill="#5eead4" fontSize={10} fontWeight={600} letterSpacing="0.14em">
+          CORDON  ·  FastAPI :8000
+        </text>
+        <text x={938} y={58} textAnchor="middle" fill="#71717a" fontSize={10} fontWeight={600} letterSpacing="0.16em">
+          EXTERNAL
         </text>
 
-        {/* Client - left of the pipeline, aligned with the flow */}
-        <Box
-          x={28}
-          y={164}
-          w={148}
-          h={68}
-          title="Client"
-          subtitle="Chat / Embed"
-          fill="#18181b"
-          stroke="#52525b"
-        />
+        {/* Nodes */}
+        <Box x={40} y={88} w={148} h={56} title="Console" subtitle="Next.js :3000" fill="#18181b" stroke="#3f3f46" />
+        <Box x={40} y={168} w={148} h={56} title="Application" subtitle="Chat / Embed" fill="#18181b" stroke="#3f3f46" />
 
-        {/* Pipeline, left to right */}
-        <Box x={228} y={172} w={112} h={56} title="1  Auth" subtitle="HMAC verify" fill="#18181b" stroke="#71717a" />
+        <Box x={256} y={128} w={118} h={56} title="Auth" subtitle="HMAC + nonce" fill="#18181b" stroke="#71717a" />
         <Box
-          x={360}
-          y={172}
-          w={112}
+          x={414}
+          y={128}
+          w={118}
           h={56}
-          title="2  Rate"
+          title="Rate limit"
           subtitle="Token bucket"
           fill="#1c1410"
           stroke="#ea580c"
@@ -216,11 +188,11 @@ export default function GatewayDiagram() {
           subtitleFill="#fdba74"
         />
         <Box
-          x={492}
-          y={172}
-          w={112}
+          x={572}
+          y={128}
+          w={118}
           h={56}
-          title="3  Coalesce"
+          title="Coalesce"
           subtitle="In-flight join"
           fill="#16101f"
           stroke="#7c3aed"
@@ -228,86 +200,83 @@ export default function GatewayDiagram() {
           subtitleFill="#c4b5fd"
         />
         <Box
-          x={624}
-          y={172}
-          w={112}
-          h={56}
-          title="4  Cache"
-          subtitle="Embed lookup"
+          x={478}
+          y={248}
+          w={160}
+          h={60}
+          title="Semantic cache"
+          subtitle="embed + lookup"
           fill="#042f2e"
           stroke="#2dd4bf"
           titleFill="#99f6e4"
           subtitleFill="#5eead4"
         />
 
-        {/* External systems - own column, not in the pipeline */}
-        <text
-          x={900}
-          y={84}
-          textAnchor="middle"
-          fill="#71717a"
-          fontSize={10}
-          letterSpacing="0.12em"
-          fontFamily="var(--font-geist-mono), ui-monospace, monospace"
-        >
-          DEPENDENCIES
-        </text>
-        <Cylinder cx={900} cy={132} title="Qdrant" subtitle="vector store" />
         <Box
-          x={830}
-          y={248}
-          w={140}
+          x={844}
+          y={124}
+          w={188}
           h={64}
-          title="Cohere API"
+          title="Cohere"
           subtitle="Chat / Embed"
           fill="#1a1406"
           stroke="#d97706"
           titleFill="#fde68a"
           subtitleFill="#fbbf24"
         />
+        <Cylinder cx={938} cy={278} />
 
-        {/* 1. Request: straight left-to-right into Auth */}
-        <Path d="M 176 198 L 228 198" color="#a1a1aa" marker="m-zinc" />
-        <Caption x={202} y={188} text="request" fill="#a1a1aa" />
+        <Box
+          x={478}
+          y={356}
+          w={160}
+          h={52}
+          title="Metrics"
+          subtitle="GET /v1/metrics"
+          fill="#111113"
+          stroke="#3f3f46"
+          titleFill="#d4d4d8"
+          subtitleFill="#71717a"
+        />
 
-        {/* 2. Pipeline hops */}
-        <Path d="M 340 200 L 360 200" color="#a1a1aa" marker="m-zinc" />
-        <Path d="M 472 200 L 492 200" color="#a1a1aa" marker="m-zinc" />
-        <Path d="M 604 200 L 624 200" color="#a1a1aa" marker="m-zinc" />
+        {/* 1. Both clients → Auth. One join, one straight in. */}
+        <Link d="M 188 116 L 220 116 L 220 156 L 256 156" color="#d4d4d8" marker="m-zinc" />
+        <Link d="M 188 196 L 220 196 L 220 156" color="#d4d4d8" marker="m-zinc" />
 
-        {/* 3. Cache hit: dedicated path ABOVE the gateway, never shares the request line */}
-        <Path d="M 680 172 L 680 48 L 102 48 L 102 164" color="#2dd4bf" dashed marker="m-teal" />
-        <Caption x={390} y={38} text="cache hit  -  skip Cohere" fill="#5eead4" />
+        {/* 2. Pipeline, one row, short hops */}
+        <Link d="M 374 156 L 414 156" color="#d4d4d8" marker="m-zinc" />
+        <Link d="M 532 156 L 572 156" color="#d4d4d8" marker="m-zinc" />
+        <Link d="M 631 184 L 631 216 L 558 216 L 558 248" color="#d4d4d8" marker="m-zinc" />
 
-        {/* 4. Lookup: cache right -> Qdrant left */}
-        <Path d="M 736 186 L 812 142" color="#2dd4bf" marker="m-teal" />
-        <Caption x={768} y={154} text="lookup" fill="#5eead4" anchor="start" />
+        {/* 3. Cache → Cohere (miss). Straight right, then up. One elbow. */}
+        <Link d="M 638 268 L 790 268 L 790 156 L 844 156" color="#f59e0b" marker="m-amber" />
+        <Tag x={760} y={258} text="miss" fill="#fbbf24" />
 
-        {/* 5. Miss: cache right -> Cohere left */}
-        <Path d="M 736 214 L 830 272" color="#f59e0b" marker="m-amber" />
-        <Caption x={768} y={256} text="miss" fill="#fbbf24" anchor="start" />
+        {/* 4. Cache → Qdrant. Straight right. */}
+        <Link d="M 638 286 L 868 286" color="#2dd4bf" marker="m-teal" />
+        <Tag x={750} y={304} text="lookup / write" fill="#5eead4" />
 
-        {/* 6. Persist: Cohere -> Qdrant (result written after a miss) */}
-        <Path d="M 900 248 L 900 168" color="#71717a" dashed marker="m-zinc" />
-        <Caption x={912} y={214} text="store" fill="#a1a1aa" anchor="start" />
+        {/* 5. Hit. Dedicated rail under the pipeline, no crossing. */}
+        <Link d="M 478 278 L 240 278 L 240 88 L 188 88" color="#2dd4bf" dashed marker="m-teal" />
+        <Tag x={360} y={270} text="hit" fill="#5eead4" />
 
         {/* Legend */}
-        <g transform="translate(28, 430)">
-          <line x1={0} y1={0} x2={28} y2={0} stroke="#a1a1aa" strokeWidth={1.6} markerEnd="url(#m-zinc)" />
-          <text x={36} y={4} fill="#a1a1aa" fontSize={12}>
-            Request path
+        <g transform="translate(20, 456)">
+          <line x1={0} y1={16} x2={28} y2={16} stroke="#d4d4d8" strokeWidth={2} strokeLinecap="round" markerEnd="url(#m-zinc)" />
+          <text x={36} y={20} fill="#a1a1aa" fontSize={12}>
+            Request
           </text>
-          <line x1={160} y1={0} x2={188} y2={0} stroke="#2dd4bf" strokeWidth={1.6} strokeDasharray="6 5" />
-          <text x={196} y={4} fill="#a1a1aa" fontSize={12}>
+          <line x1={120} y1={16} x2={148} y2={16} stroke="#2dd4bf" strokeWidth={2} strokeDasharray="7 5" strokeLinecap="round" />
+          <text x={156} y={20} fill="#a1a1aa" fontSize={12}>
             Cache hit
           </text>
-          <line x1={288} y1={0} x2={316} y2={0} stroke="#f59e0b" strokeWidth={1.6} markerEnd="url(#m-amber)" />
-          <text x={324} y={4} fill="#a1a1aa" fontSize={12}>
-            Upstream miss
+          <line x1={248} y1={16} x2={276} y2={16} stroke="#f59e0b" strokeWidth={2} strokeLinecap="round" markerEnd="url(#m-amber)" />
+          <text x={284} y={20} fill="#a1a1aa" fontSize={12}>
+            Miss to Cohere
           </text>
-          <line x1={456} y1={0} x2={484} y2={0} stroke="#71717a" strokeWidth={1.6} strokeDasharray="6 5" />
-          <text x={492} y={4} fill="#a1a1aa" fontSize={12}>
-            Write to Qdrant
+          <line x1={420} y1={16} x2={448} y2={16} stroke="#2dd4bf" strokeWidth={2} strokeLinecap="round" markerEnd="url(#m-teal)" />
+          <text x={456} y={20} fill="#a1a1aa" fontSize={12}>
+            Qdrant
           </text>
         </g>
       </svg>
