@@ -19,7 +19,12 @@ flowchart LR
     Auth["Auth<br/>HMAC + nonce"]
     Rate["Rate limit<br/>token bucket"]
     Coal["Coalesce<br/>in-flight join"]
-    Cache["Semantic cache<br/>embed + lookup"]
+    subgraph cache [Semantic cache]
+      direction TB
+      Lookup["embed + lookup"]
+      Rerank["gray-zone rerank"]
+      Lookup -->|if gray| Rerank
+    end
     Metrics["Metrics<br/>GET /v1/metrics"]
   end
 
@@ -30,15 +35,17 @@ flowchart LR
 
   Console -->|HMAC HTTPS| Auth
   App -->|HMAC HTTPS| Auth
-  Auth --> Rate --> Coal --> Cache
-  Cache -->|hit| Console
-  Cache -->|lookup / write| Qdrant
-  Cache -->|miss| Cohere
-  Cohere -->|response| Cache
+  Auth --> Rate --> Coal --> Lookup
+  Lookup -->|hit >= 0.82| Console
+  Rerank -->|accept| Console
+  Lookup -->|lookup / write| Qdrant
+  Lookup -->|below 0.70| Cohere
+  Rerank -->|reject| Cohere
+  Cohere -->|response| Lookup
   Console -.->|observe| Metrics
 ```
 
-Clients never talk to Cohere or Qdrant. Cordon is the only writer to the vector index.
+Clients never talk to Cohere or Qdrant. Cordon is the only writer to the vector index. Gray-zone rerank sits **inside** the cache, not as a fifth gateway hop.
 
 A successful proxy response includes `X-Cordon-Decision: cache | coalesced | origin`. Cache lookups also return similarity headers (`X-Cordon-Cache-Score`, `X-Cordon-Cache-Match`) so you can see why a request hit or missed.
 

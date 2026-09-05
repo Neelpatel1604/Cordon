@@ -18,7 +18,7 @@ const FEATURES = [
   },
   {
     title: "Semantic cache",
-    body: "Embeddings + Qdrant match paraphrased queries - not just exact string repeats.",
+    body: "Embeddings plus Qdrant match paraphrases. Close-but-unsure scores get a gray-zone rerank before a hit.",
   },
 ] as const;
 
@@ -70,8 +70,9 @@ export default function LandingPage() {
         <section className="mb-16">
           <h3 className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-500">Architecture</h3>
           <p className="mb-6 max-w-3xl text-sm leading-6 text-zinc-400">
-            Standard three-zone layout. Clients send signed HTTPS into Cordon. The gateway owns auth, rate
-            limits, coalescing, and semantic cache. Qdrant and Cohere stay outside the trust boundary.
+            Clients send signed HTTPS into Cordon. Auth, rate limit, and coalesce sit on the request path.
+            Semantic cache looks up Qdrant, then reranks only when the score is gray. Qdrant and Cohere
+            stay outside the trust boundary.
           </p>
           <GatewayDiagram />
         </section>
