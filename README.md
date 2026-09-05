@@ -2,28 +2,60 @@
 
 A signed, rate-limited, self-caching gateway for LLM APIs.
 
-Sits in front of [Cohere Chat and Embed](https://docs.cohere.com/reference/about). Requests are HMAC-signed, rate-limited, coalesced when identical calls are in flight, and checked against a semantic cache (Qdrant + Cohere Embed) before they reach the provider.
+Cordon sits between your application and [Cohere Chat / Embed](https://docs.cohere.com/reference/about). It authenticates every request, enforces a per-key token bucket, joins identical in-flight calls, and serves a semantic cache from Qdrant so most traffic never reaches the provider.
 
-```
-Client -> HMAC auth -> token bucket -> coalescing -> semantic cache -> Cohere
+This is a working local system, not a hosted production service.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph clients [Clients]
+    Console["Console<br/>Next.js"]
+    App["Application<br/>Chat / Embed"]
+  end
+
+  subgraph cordon [Cordon gateway]
+    Auth["Auth<br/>HMAC + nonce"]
+    Rate["Rate limit<br/>token bucket"]
+    Coal["Coalesce<br/>in-flight join"]
+    Cache["Semantic cache<br/>embed + lookup"]
+    Metrics["Metrics<br/>GET /v1/metrics"]
+  end
+
+  subgraph external [External]
+    Cohere["Cohere<br/>Chat / Embed"]
+    Qdrant[("Qdrant<br/>cordon_cache")]
+  end
+
+  Console -->|HMAC HTTPS| Auth
+  App -->|HMAC HTTPS| Auth
+  Auth --> Rate --> Coal --> Cache
+  Cache -->|hit| Console
+  Cache -->|lookup / write| Qdrant
+  Cache -->|miss| Cohere
+  Cohere -->|response| Cache
+  Console -.->|observe| Metrics
 ```
 
-The Next.js console at `frontend/` lets you drive Chat/Embed and watch cache, coalescing, and metrics live.
+Clients never talk to Cohere or Qdrant. Cordon is the only writer to the vector index.
+
+A successful proxy response includes `X-Cordon-Decision: cache | coalesced | origin`. Cache lookups also return similarity headers (`X-Cordon-Cache-Score`, `X-Cordon-Cache-Match`) so you can see why a request hit or missed.
 
 ## Prerequisites
 
 - Python 3.12+
-- Docker (for Qdrant, or the full stack)
-- A Cohere API key from [the dashboard](https://dashboard.cohere.com/api-keys)
+- Node.js 20+
+- Docker
+- A Cohere API key from the [Cohere dashboard](https://dashboard.cohere.com/api-keys)
 
 ## Setup
 
-```powershell
-cd C:\Users\patel\Downloads\side-projects\Cordon
-copy .env.example .env
+```bash
+cp .env.example .env
 ```
 
-Put your Cohere key in `.env`:
+Set at least:
 
 ```
 COHERE_API_KEY=your_key_here
@@ -32,21 +64,10 @@ CORDON_API_KEYS=demo-key:demo-secret
 
 ## Run
 
-Qdrant plus the gateway:
+Gateway + Qdrant:
 
-```powershell
+```bash
 docker compose up --build
-```
-
-Or run Qdrant in Docker and the API locally:
-
-```powershell
-docker compose up qdrant
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 - Health: `GET http://127.0.0.1:8000/health`
@@ -54,25 +75,33 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 - Embed: `POST http://127.0.0.1:8000/v1/embed`
 - Metrics: `GET http://127.0.0.1:8000/v1/metrics`
 
-Successful proxy responses include `X-Cordon-Decision: cache | coalesced | origin`.
+Console (separate terminal):
 
-## Frontend console
-
-Keep the backend running, then:
-
-```powershell
-cd C:\Users\patel\Downloads\side-projects\Cordon\frontend
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) for the landing page, or [http://localhost:3000/console](http://localhost:3000/console) for the live demo. The UI signs requests as `demo-key` / `demo-secret` and talks to `http://127.0.0.1:8000`.
+- Landing: [http://localhost:3000](http://localhost:3000)
+- Console: [http://localhost:3000/console](http://localhost:3000/console)
 
-Use the playground: **Send signed** -> **Send again** (cache) -> **Burst x4** (coalesce) -> **Unsigned** (401).
+The console signs as `demo-key` / `demo-secret` and calls `http://127.0.0.1:8000`.
+
+**Demo path:** Send signed (origin, stores cache) → Send again (cache) → Burst x4 (coalesce) → Unsigned (401).
+
+Reset the vector store (empty cache):
+
+```bash
+docker compose down -v
+docker compose up --build
+```
 
 ## Signed requests
 
-Cordon rejects unsigned, expired, or replayed calls. Canonical string:
+Unsigned, expired, or replayed calls are rejected before rate limit or cache.
+
+Canonical string:
 
 ```
 {METHOD}
@@ -82,7 +111,7 @@ Cordon rejects unsigned, expired, or replayed calls. Canonical string:
 {sha256(raw_body)}
 ```
 
-`X-Signature` is `hex(HMAC-SHA256(secret, canonical))`. From `backend/`:
+`X-Signature` is `hex(HMAC-SHA256(secret, canonical))`.
 
 ```python
 import json
@@ -92,34 +121,45 @@ body = json.dumps({"messages": [{"role": "user", "content": "hello"}]}).encode()
 headers = sign_request("POST", "/v1/chat", body, "demo-key", "demo-secret")
 ```
 
+## Environment
+
+| Variable | Default | Role |
+|---|---|---|
+| `COHERE_API_KEY` | — | Upstream key (backend only) |
+| `CORDON_API_KEYS` | `demo-key:demo-secret` | HMAC key_id:secret pairs |
+| `QDRANT_URL` | `http://localhost:6333` | Vector store |
+| `CACHE_SIMILARITY_THRESHOLD` | `0.82` | Cosine score that counts as a cache hit |
+| `CACHE_RETRIEVE_THRESHOLD` | `0.70` | Floor for nearest-neighbor lookup |
+| `RATE_LIMIT_CAPACITY` | `30` | Token bucket size per API key |
+| `RATE_LIMIT_REFILL_PER_SEC` | `5` | Bucket refill |
+
+See `.env.example` for the full list.
+
 ## Tests
 
-```powershell
+```bash
 cd backend
 pytest
 ```
 
-These cover HMAC (valid / expired / replay / tamper), concurrent token-bucket last-token, coalescing, and cache threshold hit/miss. They do not call Cohere.
+Covers HMAC (valid / expired / replay / tamper), concurrent token-bucket races, coalescing, and cache hit/miss. Unit tests do not call Cohere.
 
-## Load script
+Load script (running gateway + real Cohere key):
 
-Needs a running gateway and a real `COHERE_API_KEY`. Concurrency is modest for trial-tier limits.
-
-```powershell
+```bash
 cd backend
 python scripts/load_test.py --base-url http://127.0.0.1:8000
 ```
-
-The script fires identical requests (coalescing), paraphrases (semantic cache), and novel prompts, then prints `/v1/metrics`.
 
 ## Layout
 
 ```
 backend/app/
-  api/          HTTP routes only
+  api/          HTTP routes
   layers/       auth, rate limit, cache, coalescer
   pipeline/     request path through those layers
   services/     Cohere, Qdrant, metrics
-  clients/      HMAC request signer
+  clients/      HMAC signer
   schemas/      request/response models
+frontend/       landing page + live console
 ```
