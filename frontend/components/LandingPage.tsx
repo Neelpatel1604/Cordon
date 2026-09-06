@@ -18,7 +18,7 @@ const FEATURES = [
   },
   {
     title: "Semantic cache",
-    body: "Embeddings plus Qdrant match paraphrases. Close-but-unsure scores get a gray-zone rerank before a hit.",
+    body: "Cohere embeddings plus Qdrant match paraphrases. Unsure matches are confirmed by Cohere Rerank before serving.",
   },
 ] as const;
 
@@ -67,14 +67,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="mb-16">
+        <section className="mb-20">
           <h3 className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-500">Architecture</h3>
-          <p className="mb-6 max-w-3xl text-sm leading-6 text-zinc-400">
+          <p className="mb-8 max-w-3xl text-sm leading-6 text-zinc-400 md:text-base">
             Clients send signed HTTPS into Cordon. Auth, rate limit, and coalesce sit on the request path.
-            Semantic cache looks up Qdrant, then reranks only when the score is gray. Qdrant and Cohere
-            stay outside the trust boundary.
+            The semantic cache answers repeats and paraphrases from Qdrant; when a match is close but not
+            certain, Cohere Rerank confirms it before it is served. Only new questions reach Cohere Chat.
           </p>
-          <GatewayDiagram />
+          <div className="relative left-1/2 w-[min(100vw,1680px)] -translate-x-1/2 px-3 sm:px-5">
+            <GatewayDiagram />
+          </div>
         </section>
 
         <section className="mb-16 grid gap-4 sm:grid-cols-2">

@@ -159,25 +159,29 @@ export default function Dashboard() {
     <>
       <AuroraBackground />
       <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col gap-6 px-5 py-6 md:px-8">
-        <header className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-800 pb-6">
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-800 pb-6">
           <div>
-            <div className="mb-2 flex flex-wrap items-center gap-3">
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Gateway console</p>
-              <Link
-                href="/"
-                className="text-[11px] uppercase tracking-[0.2em] text-zinc-600 hover:text-zinc-400"
-              >
-                Overview
-              </Link>
-            </div>
-            <h1 className="text-4xl font-semibold tracking-tight text-zinc-100 md:text-5xl">{CORDON_NAME}</h1>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500">Gateway console</p>
+            <Link href="/" className="group inline-block">
+              <h1 className="text-4xl font-semibold tracking-tight text-zinc-100 transition-colors group-hover:text-white md:text-5xl">
+                {CORDON_NAME}
+              </h1>
+            </Link>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">{CORDON_TAGLINE}</p>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm">
-            <span className={`h-2 w-2 rounded-full ${online ? "bg-teal-500" : "bg-rose-400"}`} />
-            <span className="text-zinc-200">{online ? "Backend live" : "Backend offline"}</span>
-            <span className="text-zinc-600">|</span>
-            <span className="font-mono text-xs text-zinc-400">{CORDON_URL}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-md border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800"
+            >
+              Back to home
+            </Link>
+            <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-2 text-sm">
+              <span className={`h-2 w-2 rounded-full ${online ? "bg-teal-500" : "bg-rose-400"}`} />
+              <span className="text-zinc-200">{online ? "Backend live" : "Backend offline"}</span>
+              <span className="text-zinc-600">|</span>
+              <span className="font-mono text-xs text-zinc-400">{CORDON_URL}</span>
+            </div>
           </div>
         </header>
 
