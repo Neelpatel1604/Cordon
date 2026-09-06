@@ -6,6 +6,24 @@ Cordon sits between your application and [Cohere Chat / Embed](https://docs.cohe
 
 This is a working local system, not a hosted production service.
 
+## Demo
+
+**Video walkthrough (~2 min):** [Watch on Google Drive](https://drive.google.com/file/d/178ceIrVqPMRvE1IWewUaQTwIAHOXeyZc/view?usp=sharing)
+
+After [starting the stack](#run), open the [console](http://localhost:3000/console) and try:
+
+1. **Default** → Send — `X-Cordon-Decision: origin` (Cohere Chat runs, answer cached in Qdrant)
+2. **Paraphrase** → Send — `Tell me capital of france` → `X-Cordon-Decision: cache` (answer from cache, no Chat call)
+3. **Burst** — four identical concurrent requests → one `origin`, three `coalesced`
+4. **Unsigned** — rejected at auth (401)
+
+For a clean cache before recording or re-demoing:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
 ## Architecture
 
 ```mermaid
@@ -95,7 +113,7 @@ npm run dev
 
 The console signs as `demo-key` / `demo-secret` and calls `http://127.0.0.1:8000`.
 
-**Demo path:** Send signed (origin, stores cache) → Send again (cache) → Burst x4 (coalesce) → Unsigned (401).
+See [Demo](#demo) for the recommended walkthrough.
 
 Reset the vector store (empty cache):
 
