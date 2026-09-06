@@ -18,7 +18,7 @@ import { CORDON_URL, extractReply, fetchHealth, fetchMetrics, signedPost } from 
 import type { Decision, Endpoint, HealthResponse, MetricsResponse, PlayResult } from "@/lib/types";
 
 const DEFAULT_PROMPT = "What is the capital of France?";
-const PARAPHRASE_PROMPT = "What's the capital city of France?";
+const PARAPHRASE_PROMPT = "Tell me capital of france";
 
 const DECISION_STYLE: Record<Decision, string> = {
   origin: "border-amber-800 bg-amber-950 text-amber-200",

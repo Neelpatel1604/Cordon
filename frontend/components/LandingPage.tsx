@@ -133,7 +133,7 @@ export default function LandingPage() {
               What is the capital of France?
             </div>
             <div className="rounded-lg border border-teal-900/40 bg-teal-950/20 p-3 font-mono text-xs text-teal-200">
-              Which city is France&apos;s capital?
+              Tell me capital of france
               <span className="mt-2 block text-[10px] uppercase tracking-wider text-teal-400/80">
                 {"->"} semantic cache hit
               </span>
